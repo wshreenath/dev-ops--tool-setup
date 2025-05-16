@@ -1,0 +1,25 @@
+
+
+#STEP-1: UPDATE
+dnf update unzip -y
+
+#terrafrom installation  amazon linux 
+
+sudo yum install -y yum-utils shadow-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum -y install terraform
+
+#Install or update the AWS CLI
+
+sudo yum remove awscli
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws configure
+
+#if you face any error while comfiguring keys . check  ".aws/cinfigure"  and  ".aws/credential file"  .
+#to update you current installation of aws cli 
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
