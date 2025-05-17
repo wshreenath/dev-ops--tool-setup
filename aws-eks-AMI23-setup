@@ -19,7 +19,7 @@ unzip awscliv2.zip
 sudo ./aws/install
 aws configure
 
-# if you face any error while comfiguring keys . check  ".aws/cinfigure"  and  ".aws/credential file"  .
+# if you face any error while comfiguring keys . check  "vi .aws/config"  and  "vi .aws/credentials file"  .
 # to update you current installation of aws cli 
 ###################################
 
