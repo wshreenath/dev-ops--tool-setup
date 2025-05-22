@@ -1,0 +1,66 @@
+                   #use ubuntu image 
+                  #####################
+
+                  #STEP-1: UPDATE
+                   #####################
+
+                           apt update && apt install curl unzip -y
+
+                  #STEP-2: EKSCTL & KUBECTL & AWS CLI INSTALLATION : -
+                   #####################
+
+                           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                           unzip awscliv2.zip
+                           sudo ./aws/install
+                           aws configure
+
+                           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                           chmod +x kubectl
+                           mv kubectl /usr/local/bin/kubectl
+                           kubectl version --client
+
+
+
+                           sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
+                           sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
+                           eksctl version
+
+
+                  #STEP-3: CREATE CLUSTER: -
+                   #####################
+                  
+                           eksctl create cluster --name=shree-cluster \
+                           --version 1.32  \
+                           --region us-east-2 \
+                           --zones=us-east-2a,us-east-2b,us-east-2c  \
+                           --nodegroup-name shree-cluster-ng-1 \
+                           --node-type t2.micro \ 
+                           --nodes=2  \
+                           --nodes-min 2 \
+                           --nodes-max 4  \
+                           --node-volume-size=20 \
+                           --managed \
+                           --with-oidc \
+                           --ssh-access \
+                           --ssh-public-key ohio-universal-pem-key \
+                          
+                           --asg-access \
+                           --full-ecr-access \
+                           --alb-ingress-access \
+                           --external-dns-access \
+                           --appmesh-access \
+                           --tags "Environment=dev,Owner=shree" \
+                                                  
+                           
+                          
+                  #step-4: verifying cluster 
+                   #####################
+                  
+                           kubectl cluster-info
+                           eksctl get clusters
+                           eksctl get nodegroup --cluster shree-cluster 
+
+                  #STEP-5: DELETE RESOURCES : -
+                   #####################
+                           eksctl delete cluster --name shree-cluster --region us-east-2
+                           kubectl cluster-info
