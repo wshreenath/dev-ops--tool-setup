@@ -1,7 +1,7 @@
 
 
 #STEP-1: UPDATE
-dnf update unzip curl -y
+yum update unzip curl -y
 
 # terrafrom installation  amazon linux
 ###################################
@@ -10,6 +10,8 @@ dnf update unzip curl -y
 sudo yum install -y yum-utils shadow-utils
 sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
 sudo yum -y install terraform
+terraform --version
+
 
 ### Install the AWS CLI
 ###################################
@@ -18,8 +20,14 @@ sudo yum remove awscli
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install
-aws configure
+export PATH=$PATH:/usr/local/bin
 
+#Add AWS CLI to PATH Permanently
+echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+source ~/.bashrc
+aws --version
+
+aws configure
 # if you face any error while comfiguring keys . check  "vi .aws/config"  and  "vi .aws/credentials file"  .
 
 ### to update you current installation of aws cli
@@ -62,6 +70,7 @@ kubectl version --client
 sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
 sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
 eksctl version
+ekscrl
 
 
 
