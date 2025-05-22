@@ -3,14 +3,15 @@
 #STEP-1: UPDATE
 dnf update unzip curl -y
 
-# terrafrom installation  amazon linux 
+# terrafrom installation  amazon linux
 ###################################
+ 
 
 sudo yum install -y yum-utils shadow-utils
 sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
 sudo yum -y install terraform
 
-# Install or update the AWS CLI
+### Install the AWS CLI
 ###################################
 
 sudo yum remove awscli
@@ -20,17 +21,15 @@ sudo ./aws/install
 aws configure
 
 # if you face any error while comfiguring keys . check  "vi .aws/config"  and  "vi .aws/credentials file"  .
-# to update you current installation of aws cli 
-###################################
 
+### to update you current installation of aws cli
+###################################
 
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 unzip awscliv2.zip
 sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
 
-
-
-## install or update kubectl
+### install or update kubectl
 ###################################
 
 
@@ -45,7 +44,9 @@ mv ./kubectl ~/.local/bin/kubectl
 
 kubectl version --client
 
-# install eksctl
+### install eksctl 
+###################################
+
 # When using eksctl the IAM security principal that you’re using must have permissions to work with Amazon EKS IAM roles, service linked roles, AWS 
 # CloudFormation, a VPC, and related resources
 
