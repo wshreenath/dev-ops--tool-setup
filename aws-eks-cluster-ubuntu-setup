@@ -29,28 +29,26 @@
                   #STEP-3: CREATE CLUSTER: -
                    #####################
                   
-                           eksctl create cluster --name=shree-cluster \
-                           --version 1.32  \
-                           --region us-east-2 \
-                           --zones=us-east-2a,us-east-2b,us-east-2c  \
-                           --nodegroup-name shree-cluster-ng-1 \
-                           --node-type t2.micro \ 
-                           --nodes=2  \
-                           --nodes-min 2 \
-                           --nodes-max 4  \
-                           --node-volume-size=20 \
-                           --managed \
-                           --with-oidc \
-                           --ssh-access \
-                           --ssh-public-key ohio-universal-pem-key \
-                          
-                           --asg-access \
-                           --full-ecr-access \
-                           --alb-ingress-access \
-                           --external-dns-access \
-                           --appmesh-access \
-                           --tags "Environment=dev,Owner=shree" \
-                                                  
+                          eksctl create cluster \
+                            --name=shree-cluster \
+                            --version=1.29 \
+                            --region=us-east-2 \
+                            --zones=us-east-2a,us-east-2b,us-east-2c \
+                            --nodegroup-name=shree-cluster-ng-1 \
+                            --node-type=t3.small \
+                            --nodes=2 \
+                            --nodes-min=2 \
+                            --nodes-max=4 \
+                            --node-volume-size=20 \
+                            --managed \
+                            --with-oidc \
+                            --ssh-access \
+                            --ssh-public-key=ohio-universal-pem-key \
+                            --full-ecr-access \
+                            --alb-ingress-access \
+                            --external-dns-access \
+                            --tags="Environment=dev,Owner=shree"
+                                                                            
                            
                           
                   #step-4: verifying cluster 
