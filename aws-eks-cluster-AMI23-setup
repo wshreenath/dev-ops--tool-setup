@@ -1,7 +1,7 @@
 
 
 #STEP-1: UPDATE
-dnf update unzip -y
+dnf update unzip curl -y
 
 # terrafrom installation  amazon linux 
 ###################################
