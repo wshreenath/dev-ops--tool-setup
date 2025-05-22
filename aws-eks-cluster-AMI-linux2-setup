@@ -70,7 +70,7 @@ kubectl version --client
 sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
 sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
 eksctl version
-ekscrl
+eksctl
 
 
 
