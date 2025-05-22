@@ -66,12 +66,52 @@ kubectl version --client
 #   IAM	Limited: List, Read, Write, Permissions Management
 #   Systems Manager	Limited: List, Read
 
+### install eksctl 
 ################################
 sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
 sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
 eksctl version
 eksctl
 
+
+### setup  or create aws eks cluster  where controlplane managed by aws and nodes are managed by us 
+################################
+
+                  #STEP-1: CREATE CLUSTER: -
+                  
+                           eksctl create cluster --name=shree-cluster \
+                           --version 1.32  \
+                           --region us-east-2 \
+                           --zones=us-east-2a,us-east-2b,us-east-2c  \
+                           --nodegroup-name shree-cluster-ng-1 \
+                           --node-type t2.micro \ 
+                           --nodes=2  \
+                           --nodes-min 2 \
+                           --nodes-max 4  \
+                           --node-volume-size=20 \
+                           --managed \
+                           --with-oidc \
+                           --ssh-access \
+                           --ssh-public-key ohio-universal-pem-key \
+                           --asg-access \
+                           --full-ecr-access \
+                           --alb-ingress-access \
+                           --external-dns-access \
+                           --appmesh-access \
+                           --tags "Environment=dev,Owner=shree" \
+                                                  
+                           
+                          
+                  #step-2: verifying cluster 
+                  
+                           kubectl cluster-info
+                           eksctl get clusters
+                           eksctl get nodegroup --cluster shree-cluster 
+
+                  #STEP-3: DELETE RESOURCES : -
+                           
+                           eksctl delete cluster --name shree-cluster --region us-east-2
+                           kubectl cluster-info
 
 
 
