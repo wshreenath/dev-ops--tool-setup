@@ -6,7 +6,9 @@ use AL2023 AMI IMAGE which is compatiable with eks cluster and managing serverv.
 ###########################################################################################################################################
 
 #STEP-1: UPDATE
-yum update unzip curl -y
+
+sudo dnf install -y curl wget  unzip git conntrack bash-completion
+
 
 # terrafrom installation  amazon linux
 ###################################
