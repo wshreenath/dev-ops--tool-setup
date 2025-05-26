@@ -112,7 +112,10 @@ eksctl
                   
                            kubectl cluster-info
                            eksctl get clusters
+                           #Configured to connect to your shree-cluster. You can configure it using:
+                           aws eks update-kubeconfig --name shree-cluster --region us-east-2
                            eksctl get nodegroup --cluster shree-cluster 
+                           aws eks describe-nodegroup --cluster-name shree-cluster --nodegroup-name shree-cluster-ng-1 --region us-east-2
 
                   #STEP-3: DELETE RESOURCES : -
                            
