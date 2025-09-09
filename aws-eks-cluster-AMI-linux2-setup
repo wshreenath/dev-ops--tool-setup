@@ -1,92 +1,90 @@
-###########################################################################################################################################
-===========================================================================================================================================
+note:-
+            use AL2023 AMI IMAGE which is compatible with eks cluster and managing server.other images may face many problem ,even AL02 AMI
+            also and it will depricated soon nov25
 
-use AL2023 AMI IMAGE which is compatiable with eks cluster and managing serverv.other images may face mmany problem ,even AL02 AMI also and it will depricated soon nov25
-===========================================================================================================================================
-###########################################################################################################################################
+      STEP-1: UPDATE and install dependent packages
+=====================================================
+               sudo dnf install -y curl wget  unzip git conntrack bash-completion
 
-#STEP-1: UPDATE
+      #  TERRAFORM INSTALLATION  AMAZON LINUX
+====================================================
+             
 
-sudo dnf install -y curl wget  unzip git conntrack bash-completion
-
-
-# terrafrom installation  amazon linux
-###################################
- 
-
-sudo yum install -y yum-utils shadow-utils
-sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-sudo yum -y install terraform
-terraform --version
+               sudo yum install -y yum-utils shadow-utils
+               sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+               sudo yum -y install terraform
+               terraform --version
 
 
-### Install the AWS CLI
-###################################
+      #  Install the AWS CLI
+==========================================================
+               sudo yum remove awscli
+               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+               unzip awscliv2.zip
+               sudo ./aws/install
+               export PATH=$PATH:/usr/local/bin
 
-sudo yum remove awscli
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-export PATH=$PATH:/usr/local/bin
+         #  Add AWS CLI to PATH Permanently
+=============================================================         
+               echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+               source ~/.bashrc
+               aws --version
 
-#Add AWS CLI to PATH Permanently
-echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
-source ~/.bashrc
-aws --version
-
-aws configure
-# if you face any error while comfiguring keys . check  "vi .aws/config"  and  "vi .aws/credentials file"  .
-
-### to update you current installation of aws cli
-###################################
-
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
-
-### install or update kubectl
-###################################
+               aws configure
+            
+         #  if you face any error while configuring keys. check  "vi .aws/config"  and  "vi .aws/credentials file"  .
 
 
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
- curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
-echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-chmod +x kubectl
-mkdir -p ~/.local/bin
-mv ./kubectl ~/.local/bin/kubectl
-# and then append (or prepend) ~/.local/bin to $PATH
-
-kubectl version --client
-
-### install eksctl 
-###################################
-
-# When using eksctl the IAM security principal that you’re using must have permissions to work with Amazon EKS IAM roles, service linked roles, AWS 
-# CloudFormation, a VPC, and related resources
-
-# you need a AWS Service &	Access Level
-#   CloudFormation	Full Access
-#  EC2	Full: Tagging Limited: List, Read, Write
-#   EC2 Auto Scaling	Limited: List, Write
-#   EKS	Full Access
-#   IAM	Limited: List, Read, Write, Permissions Management
-#   Systems Manager	Limited: List, Read
-
-### install eksctl 
-################################
-sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
-sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
-eksctl version
-eksctl
+      #  to update you current installation of aws cli
+==================================================================
+               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+               unzip awscliv2.zip
+               sudo ./aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
 
 
-### setup  or create aws eks cluster  where controlplane managed by aws and nodes are managed by us 
-################################
+      #  install or update kubectl
+====================================================================
 
-                  #STEP-1: CREATE CLUSTER: -
+               curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+               curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl.sha256"
+               echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+               sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+               chmod +x kubectl
+               mkdir -p ~/.local/bin
+               mv ./kubectl ~/.local/bin/kubectl
+            
+            # and then append (or prepend) ~/.local/bin to $PATH
+
+               kubectl version --client
+
+      #  install eksctl 
+====================================================
+            #  When using eksctl the IAM security principal that you’re using must have permissions to work with Amazon EKS IAM roles, 
+               service linked roles, AWS 
+            #  CloudFormation, a VPC, and related resources
+
+            #  you need a AWS Service &	Access Level
+            #  CloudFormation	Full Access
+            #  EC2	Full: Tagging Limited: List, Read, Write
+            #  EC2 Auto Scaling	Limited: List, Write
+            #  EKS	Full Access
+            #  IAM	Limited: List, Read, Write, Permissions Management
+            #  Systems Manager	Limited: List, Read
+
+      #  install eksctl 
+=============================================
+               sudo wget https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz
+               sudo tar -xzvf eksctl_$(uname -s)_amd64.tar.gz -C /usr/local/bin
+               eksctl version
+               eksctl
+
+
+      #  setup  or create aws eks cluster  where controlplane managed by aws and nodes are managed by us 
+=============================================================
+
+         #  STEP-1: CREATE CLUSTER: -
                   
-                          eksctl create cluster \
+                     eksctl create cluster \
                             --name=shree-cluster \
                             --version=1.29 \
                             --region=us-east-2 \
@@ -108,27 +106,18 @@ eksctl
                                                                             
                            
                           
-                  #step-2: verifying cluster 
-                  
-                           kubectl cluster-info
-                           eksctl get clusters
-                           #Configured to connect to your shree-cluster. You can configure it using:
-                           aws eks update-kubeconfig --name shree-cluster --region us-east-2
-                           eksctl get nodegroup --cluster shree-cluster 
-                           aws eks describe-nodegroup --cluster-name shree-cluster --nodegroup-name shree-cluster-ng-1 --region us-east-2
+         #  step-2: verifying cluster 
+          ========================================        
+                     kubectl cluster-info
+                     eksctl get clusters
+                 
+               #  Configured to connect to your shree-cluster. You can configure it using:
+               
+                     aws eks update-kubeconfig --name shree-cluster --region us-east-2
+                     eksctl get nodegroup --cluster shree-cluster 
+                     aws eks describe-nodegroup --cluster-name shree-cluster --nodegroup-name shree-cluster-ng-1 --region us-east-2
 
-                  #STEP-3: DELETE RESOURCES : -
-                           
-                           eksctl delete cluster --name shree-cluster --region us-east-2
-                           kubectl cluster-info
-
-
-
-
-
-
-
-
-
-
-
+         #  STEP-3: DELETE RESOURCES : -
+         ===========================================                  
+                     eksctl delete cluster --name shree-cluster --region us-east-2
+                     kubectl cluster-info
