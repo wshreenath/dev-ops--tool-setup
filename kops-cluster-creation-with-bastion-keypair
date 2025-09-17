@@ -1,0 +1,225 @@
+
+ DELETE CLUSTER:-
+            kops delete cluster --name nithya.k8s.local --yes
+
+ AWS CONFIGURATION FOR KOPS SETUP :-
+               here we are using amazon linux 2 ami in aws and login to server using mobaexterm .
+               
+      STEP-1: GIVING PERMISSIONS 
+
+            KOps Is a third party tool.if it want to create infrastructure/k8s cluster on aws a/c using kops.aws a/c need to give  
+            permission for it. so we can use IAM user/role to assign permission for the kops tool.
+            
+             
+           ; execute in aws console a/c .create IAM user give it full access ,attach policy  administrator-Access,amazon-s3-full-access,
+               Iam-user-change-password.
+            1.
+               iam -- > user -- > create user -- > name: nithya -- > attach policies directly -- > administrator-access -- > next -- >
+               create user
+           
+            2.   
+               user -- > security credentials -- > create access keys -- > cli -- > checkbox -- >  create access keys -- > download 
+
+
+      SETP-2: INSTALL KUBECTL AND KOPS:-
+         -  execute on server which you want use as kops server or master using CLI .it will prompt for access key and secret key, region .
+         -  save your private and public pem key in server "~/ssh" directory .  
+         
+            -  save your private and public pem key in server "~/ssh" directory .  
+         
+               cat ohio-universal-pem-key.pem
+                        
+            -   To get an OpenSSH-format public key (ohio-universal-pem-key.pub style) from an OpenSSH/private PEM key   
+            
+                  ssh-keygen -y -f ohio-universal-pem-key.pem > ohio-universal-pem-key.pub
+                  
+            -  To get an OpenSSH-format private key (id_rsa style) from an OpenSSH/private PEM key    
+            -  If you see "-----BEGIN RSA PRIVATE KEY-----"this means already an RSA private key . You can just copy/rename.
+            
+               cp    ohio-universal-pem-key.pem    ohio-universal-pem-key.pem
+               
+               chmod 400 ~/.ssh/ohio-universal-pem-key.pem
+               chmod 644 ~/.ssh/ohio-universal-pem-key.pem
+               
+               cp    ohio-universal-pem-key.pem    ~/.ssh/
+               cp    ohio-universal-pem-key.pub      ~/.ssh/
+             
+            aws configure 
+                  ;aws access key ID :
+                  ;aws  secret access key:
+                  ;default region name :us-east-1 
+                  :default output format: table  
+               
+         ;  here we provide  full access of our aws a/c to our kops server . which you want make as kops master .
+         ;  https://github.com/kubernetes/kops/blob/master/permalinks/upgrade_kops.md#1.33.0
+
+         
+            
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            wget https://github.com/kubernetes/kops/releases/download/v1.33.0/kops-linux-amd64
+            chmod +x kops-linux-amd64 kubectl
+            mv kubectl /usr/local/bin/kubectl
+            mv kops-linux-amd64 /usr/local/bin/kops
+
+            vim ~/.bashrc
+                  export PATH=$PATH:/usr/local/bin/ 
+               esc:wq 
+      
+            source .bashrc
+            source ~/.bashrc                    #its specifying that ".bashrc" file is in home(~) dir of that user  .
+
+      NOTE:- while executing below code change the bucket name . because in aws, every bucket should have unique name .
+      
+      SETP-3: CREATING BUCKET 
+      
+            aws s3api create-bucket \
+               --bucket kops-state-file-data1234.k8s.local \
+               --region us-east-2 \
+               --create-bucket-configuration LocationConstraint=us-east-2
+               
+            aws s3api put-bucket-versioning  \
+               --bucket kops-state-file-data1234.k8s.local\
+               --region us-east-2   \
+               --versioning-configuration Status=Enabled
+               
+            export KOPS_STATE_STORE=s3://kops-state-file-data1234.k8s.local
+
+      SETP-4: CREATING THE CLUSTER
+      
+            kops create cluster \
+               --name=nithya.k8s.local \
+               --zones=us-east-2a \
+               --state=s3://kops-state-file-data1234.k8s.local \
+               --image=ami-0634f3c109dcdc659 \
+               --control-plane-size=t2.medium \
+               --control-plane-count=1 \
+               --node-size=t2.medium \
+               --node-count=2 
+               
+               
+      NOTE: here bastion parameter support only when you use topology private . we can mention topology private or public    
+               
+            kops update cluster --name nithya.k8s.local --yes --admin  
+            
+            kops get all
+               
+            kops export kubecfg nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --admin
+            kubectl config get-contexts
+            kops validate cluster --wait 10m                            ; validate cluster : 
+            
+            kops update cluster --name nithya.k8s.local --yes --admin
+            kops rolling-update cluster
+            
+            kubectl get node 
+            kubectl describe node node-name 
+
+      NOTE:-
+            [  prerequisite :we already have that public key and private key. example with our public PEM key attached to node. to access 
+               nodes. .use below cmd sample .
+            
+               kops create cluster \
+                       --name=nithya.k8s.local \
+                       --zones=us-east-2a \
+                       --state=s3://my-kops-state-bucket \
+                       --image=ami-0634f3c109dcdc659 \
+                       --control-plane-size t2.medium \
+                       --control-plane-count 1 \
+                       --node-size=t2.medium \
+                       --node-count=2 \
+                       --ssh-public-key ~/.ssh/swiggy-key-pair.pub
+
+               
+
+            ]
+            
+            
+   NOTE:-      after this cluster gets created and it will prompt below information in cmd prompt 
+      [  
+         Suggestions:-
+         
+               kops get cluster                                                  ; list kops clusters 
+               kops edit cluster nithya.k8s.local                                ; edit this cluster with: 
+               kops edit ig --name=nithya.k8s.local nodes-us-east-2a             ; edit your node instance group: 
+               kops edit ig --name=nithya.k8s.local master-us-east-2a            ; edit your master instance group:
+               kops update cluster --name  nithya.k8s.local  --yes  --admin      ; finally configure kops cluster with: 
+               
+         Suggestions after updating cluster :-
+         
+               kops validate cluster --wait 10m                            ; validate cluster : 
+               kubectl get nodes --show-labels                             ; list nodes : 
+               
+               
+               
+               
+               ssh -i ~/.ssh/id_rsa ubuntu@api.nithya.k8s.local            ; ssh to master node
+               
+               ssh -i /root/kube-workspace/ohio-universal-pem-key.pem  root@ec2-52-14-220-241.us-east-2.compute.amazonaws.com
+               
+         ;to ssh master and worker node you need some information you will get that by following cmd       
+         ;  the ubuntu user to is specific to ubuntu .if not using ubuntu please use the appropriate user based on your  os .
+         ;  fro amazon linux ec2-user 
+         
+            kubectl get node 
+            kubectl describe node controlplane-node-name 
+              
+      ]
+      
+      EXECUTION:-
+               
+               kops get cluster 
+               kops update cluster --name  nithya.k8s.local  --yes  --admin 
+               kops validate cluster --wait 10m                               ; when you update the cluster we will see many errors .
+                
+                
+   FMI(for more information):-
+               visit to www.kops.io website .
+
+   ERROR:-
+        [Error-1: State Store: Required value: Please set the --state flag or exp                  
+               SOL: export KOPS_STATE_STORE=s3://kops_state_file_data.k8s.local
+
+         ERROR-2:   The error IllegalLocationConstraintException in AWS 
+               solution: mention  location constraint in cmd as below .if your using different region than N.Virginia , its mandatory .
+               
+               aws s3api create-bucket --bucket my-bucket --region us-west-2 --create-bucket-configuration LocationConstraint=us-west-2
+         ]      
+
+   ADMIN ACTIVITIES THROUGH CLI:-(not recommanded ):-
+   
+         ;  shortcut EUR (EDIT ,UPDATE ,ROLLING UPDATE )
+         ;  To scale the worker nodes.this cmd are provided in suggestion copy from their .
+               
+               kops get cluster 
+               kubectl get nodes 
+               kops edit ig --name=nithya.k8s.local nodes-us-east-1a             ; it will open yaml file change the parameter there .
+               
+         ; but after making any changes to master node or worker node file,update the cluster and rolling update to make changes effective .
+               
+               
+               kops update cluster --name nithya.k8s.local --yes --admin 
+               kops rolling-update cluster --yes
+               kubectl get nodes 
+               
+               
+         ; scaling master node   
+               kubectl get nodes 
+               kops edit ig --name=nithya.k8s.local master-us-east-1a             ; it will open yaml file change the parameter there .
+               kops update cluster --name nithya.k8s.local --yes --admin 
+               kops rolling-update cluster --yes
+               kubectl get nodes 
+
+   ADMIN ACTIVITIES USING GUI :-
+            ; use aws console to perform this activity .like scaling the worker  nodes  or master node .
+            
+               scaling worker node or master node  through GUI:-
+               aws -->dashboard -->asg -- > master/worker node -- > select -->edit -- > desired: 4 -- > save
+
+   NOTE:-   In real time we use five node cluster in which two master nodes and three worker nodes.
+
+      NOTE:-  
+            its My humble request for all of you.do not to delete the cluster manually and do not delete any server manually .use the
+            below command to delete the cluster.
+               
+
+***DELETE CLUSTER:-
+            kops delete cluster --name nithya.k8s.local --yes
