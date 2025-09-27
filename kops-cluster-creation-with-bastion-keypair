@@ -332,3 +332,14 @@
 
             kops delete cluster --name nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes
             kops delete cluster --name nithya.k8s.local --yes
+
+
+
+
+
+
+
+
+
+
+
