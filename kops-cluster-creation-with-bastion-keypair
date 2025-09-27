@@ -2,34 +2,33 @@
    
             here we are using amazon linux 2023 AMI in aws to create ec2 and login to server using mobaexterm  .
                
-      -  CREATE A NEW USER ,CREATE ADMIN USER and CHANGE PASSWORD   :
-            ; perform this activity by root user 
-            
-               sudo  useradd <username>
-               sudo  useradd admin
-               
+ -  CREATE A NEW USER ,CREATE ADMIN USER and CHANGE PASSWORD   :
+         ; perform this activity by root user 
+                sudo  useradd <username>
+                sudo  useradd admin
+                 
                
          ;  add existing user to wheel group 
                
-               sudo usermod -aG wheel <username>
-               sudo usermod -aG wheel admin
-                     
-               groups <username>                            #  verify group membership:
-               groups  admin                                #  verify group membership:
+                 sudo usermod -aG wheel <username>
+                 sudo usermod -aG wheel admin
+                       
+                 groups <username>                            #  verify group membership:
+                 groups  admin                                #  verify group membership:
 
          ;  by default, in rhel/fedora, the /etc/sudoers file already has this line enabled,means root persmission.
                
-               %wheel  ALL=(ALL)       ALL
+                 %wheel  ALL=(ALL)       ALL
          
          ;  OR you can do this another way .
          ;  edit sudoers file (if needed).always its edited by use of  visudo .
                
                sudo visudo
                   ;  Then add an entry like below then if its nano editor close it by using crtl o , ctrl x .
-
-                     ;username ALL=(ALL) ALL
-                     admin  ALL=(ALL) ALL
-                     
+  
+                       ;username ALL=(ALL) ALL
+                       admin  ALL=(ALL) ALL
+                       
                crtl o
                Enter 
                crtl x    
@@ -87,22 +86,24 @@
                   AmazonSQSFullAccess
                   AmazonEventBridgeFullAccess
                
-        1.
+        1. creating IAM user :-
+
                IAM -- > USER -- >create user -->name: terraform-infra-creator-IAM -- >attach policies directly -- >(above mentioned )
                administrator-access -- > next -- > create user
               
            
-         2.   
+         2.   creating access key and secret key for IAM user :-
+
                USER -->select: terraform-infra-creator-IAM -- > security credentials -- >create access keys -- >cli -->checkbox -- > 
                create access keys -- > download 
 
 
       SETP-2: INSTALL KUBECTL AND KOPS:-
       
-         -  execute on server which you want use as kops server or controller using CLI .it will prompt for access key and secret 
+         -  execute on server which you want use as kops manager or controller using CLI .it will prompt for access key and secret 
             key, region .
                
-      EXECUTION:-
+  EXECUTION:-
          ; provide above downloaded key for IAM user :terraform-infra-creator-IAM 
       
             aws configure 
@@ -172,7 +173,7 @@
               --topology public 
               
               
-              --bastion=true 
+          #    --bastion=true 
                
                
       NOTE:- 
@@ -181,9 +182,6 @@
          -  when you specify the --topology=public the bastion parameter no need to specify .otherwise it will give you error .
       
       EXECUTION:-
-      
-                              
-               
                
             kops update cluster --name=nithya.k8s.local  --state=s3://kops-state-file-data1234.k8s.local  --yes --admin
             export KOPS_STATE_STORE=s3://kops-state-file-data1234.k8s.local
@@ -193,19 +191,11 @@
             kops update cluster --name=nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes  --admin
             kops rolling-update cluster --name=nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes
                
-               
-     
-         [  OR 
-               kops update cluster --name nithya.k8s.local  --yes    --admin  
-               kops validate cluster --wait 10m                                                  ; validate cluster : 
-               kops update cluster --name nithya.k8s.local --yes --admin
-               kops rolling-update cluster
-         ]         
-                           
-               kops get all
+
+            kops get all
                   
-               kops export kubecfg nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --admin
-               kubectl config get-contexts
+            kops export kubecfg nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --admin
+            kubectl config get-contexts
                
                kubectl get pod -A --watch       ; run in another tab ,to check all pods are ready or not
                kubectl get node 
@@ -237,20 +227,19 @@
          Suggestions after updating cluster or make any changes to cluster :-
         
                kops validate cluster --state=s3://kops-state-file-data1234.k8s.local      --wait     10m
-               kubectl get node -o wide 
-               kubectl get nodes --show-labels                                ; list nodes : 
-               ssh -i ~/.ssh/id_rsa ec2-user@api.nithya.k8s.local             ; ssh to master node
+               kubectl get node         -o wide 
+               kubectl get nodes        --show-labels                                ; list nodes : 
+               ssh -i ~/.ssh/id_rsa     ec2-user@public-Ip                           ; ssh to master node
      
       ]
                
       TO SSH MASTER AND WORKER NODE YOU NEED SOME INFORMATION YOU WILL GET THAT BY FOLLOWING CMD   :-    
       
       NOTE:- 
-            you can only ssh to master node and worker node using private ip, public ip , private dns .if topology is public for cluster 
-            creation then you can access cluster node using public-ip. if topology is private then you access using  private-ip, private dns 
-            from bastion server .
-
-     
+         -  you can only ssh to master node and worker node using private ip, public ip , private dns .
+         -  if topology is public for cluster creation then you can access cluster node using public-ip. 
+         -  if topology is private then you access using  private-ip, private dns from bastion server .
+            
 
             kubectl get node 
             kubectl get node -o wide 
@@ -278,21 +267,13 @@
 
 
             ssh -i ~/.ssh/id_rsa  admin@ExternalIP
-            ssh -i ~/.ssh/id_rsa  admin@public-ip
             ssh -i ~/.ssh/id_rsa  admin@public-DNS 
             
            
-            ssh -i ~/.ssh/id_rsa    ec2-user@18.217.117.203                                      ;using ec2-user user
-            ssh -i ~/.ssh/id_rsa    admin@18.217.117.203                                         ;using admin  user 
-           
-            ssh -i ~/.ssh/id_rsa    ec2-user@i-08670538d8c274947.us-east-2.compute.internal        ;using hostname 
+            ssh -i ~/.ssh/id_rsa    ec2-user@18.217.117.203                                       ;using ec2-user user
             ssh -i ~/.ssh/id_rsa    ec2-user@ec2-3-15-230-237.us-east-2.compute.amazonaws.com      ;using public dns
 
 
-            ssh -i ~/.ssh/id_rsa    ec2-user@3.145.190.104           ; control-plane node 
-            ssh -i ~/.ssh/id_rsa    ec2-user@3.143.170.170           ; worker node-1
-            ssh -i ~/.ssh/id_rsa    ec2-user@ 3.15.230.237           ; worker node-2
-            
    FMI(for more information):-
    
                visit to www.kops.io website .
@@ -338,7 +319,7 @@
             kops update cluster --name=nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes  --admin
             kops rolling-update cluster --name=nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes
             
-            
+    OR        
    ADMIN ACTIVITIES USING GUI :-
    
             ; use aws console to perform this activity .like scaling the worker  nodes  or master node .
@@ -346,13 +327,7 @@
                scaling worker node or master node  through GUI:-
                AWS -->dashboard -->ASG -- > master/worker node -- > select -->edit -- > desired: 4 -- > save
 
-   NOTE:-   In real time we use five node cluster in which two master nodes and three worker nodes.
-
-      NOTE:-  
-            its My humble request for all of you.do not to delete the cluster manually and do not delete any server manually .use the
-            below command to delete the cluster.
-               
-
+    
 ***DELETE CLUSTER:-
 
             kops delete cluster --name nithya.k8s.local --state=s3://kops-state-file-data1234.k8s.local --yes
