@@ -1,0 +1,137 @@
+  CLUSTER SETUP BY USING KUBEADM: -  
+   
+      PRE-REQUISITE :-
+      
+            create 3 servers in aws account out of which one is "t2.medium" and 2 are "t.micro" or "small"  with ubuntu AMI ( 1 master
+            & 2 workers) for master node use storage of at least 30 GB.
+            
+
+      STEP-1:- INSTALL KUBEADM,  KUBELET, KUBECTL
+      
+         ;  use multi execution mode in mobaexterm  and multi paste cmd . it means below cmd execute on master as well as worker node . 
+               
+               sudo apt-get update
+               sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+                  
+                  # If the directory "/etc/apt/keyrings" does not exist, it should be created before the curl command, read the note below.
+                  # sudo mkdir -p -m 755 /etc/apt/keyrings
+                  # below cmd is used to public sign in for k8s package repo .
+                  
+               curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+                  #below cmd Add the appropriate K8s apt repo. Please note that this repo have packages only for Kubernetes 1.31;
+                  
+               echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+               sudo apt-get update
+               sudo apt-get install -y kubelet kubeadm kubectl
+               sudo apt-mark hold kubelet kubeadm kubectl
+               sudo systemctl enable --now kubelet
+
+      STEP-2:- INSTALL CONTAINER RUNTIME.
+      
+         ;  as of now docker,docker composer,docker swarm create container.but in k8s, CRE (container runtime engine )create container .
+         ;  so install CRE (container runtime engine ). here we use containerd CRE (container runtime engine ).
+
+               sudo apt-get update
+               sudo apt install containerd -y
+
+      STEP-3:- CONFIGURING THE SYSTEMD CGROUP DRIVER 
+      
+               sudo mkdir -p /etc/containerd/
+               
+         #  generate default config file for containerd       
+               containerd config default                                   
+               containerd config default > /etc/containerd/config.toml
+                  
+         NOTE:- check for below section for that parameter 
+            [
+                [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+                     BinaryName = ""
+                     CriuImagePath = ""
+                     CriuPath = ""
+                     CriuWorkPath = ""
+                     IoGid = 0
+                     IoUid = 0
+                     NoNewKeyring = false
+                     SystemdCgroup = false
+
+
+                     
+            ]
+                  
+                  
+         #  change status of systemdCgroup parameter in "config.toml" file to true    
+         
+               sed -i '139s/false/true/' /etc/containerd/config.toml     
+                 
+               systemctl restart containerd.service
+               systemctl status  containerd.service	
+               
+         #  enabling the ipv4 packet forwarding on both master and worker .
+                        
+               sudo echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward        
+
+      STEP-4:- CREATE A CLUSTER (execute ON MASTER NODE  only )
+      
+         #  check the file value
+      
+               cat  /proc/sys/net/ipv4/ip_forward         
+
+         #  enabling the ipv4 packet forwarding ,by default value of file is zero
+              
+               sudo echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward    
+               
+      #  ADVERTISING(PUBLISHING) THE SERVER as CONTROLPLANE(master) TO WHOLE CLUSTER BY SPECIFYING THE SERVER IP  
+         
+               hostname -i    
+               sudo kubeadm init  --apiserver-advertise-address    ip-address-master  --pod-network-cidr  "10.0.0.0/16"    --upload-certs
+               sudo kubeadm init  --apiserver-advertise-address      172.31.86.121    --pod-network-cidr  "10.0.0.0/16"    --upload-certs
+            
+         #  you will see this cmds in logs ,while initializing kubeadm .just copy and paste in same terminal of master node .
+         #  copy below command to master only  
+               
+               mkdir -p $HOME/.kube
+               sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+               sudo chown $(id -u):$(id -g) $HOME/.kube/config
+               kubectl get node 
+
+      #  JOINING THE SERVER AS WORKER NODE TO  THE K8S CLUSTER 
+
+         #  you will see this token in logs ,while initializing kubeadm .just copy this token and paste on worker node .
+         #  copy token to worker nodes. first copy to note pad and remove unwanted space .then paste on worker node .
+               
+               kubeadm join 172.31.31.163:6443 --token s9nzbw.q7fnbrwpeksbz5bc \
+                          --discovery-token-ca-cert-hash sha256:267ee04431d660e3e170651bf3fb783fd9a5bf867856b3f706e3a80c5d50b791
+                          
+              kubeadm join 172.31.25.71:6443 --token gqr6xf.n17qsy7dnxicz4ix \
+        --discovery-token-ca-cert-hash sha256:efe059ee9319056a8b12a30bbec67d97de9024508f1ff85d5703aebbe726ab09
+            
+            
+            sudo kubeadm join 172.31.25.71:6443 --token gqr6xf.n17qsy7dnxicz4ix \
+    --discovery-token-ca-cert-hash sha256:efe059ee9319056a8b12a30bbec67d97de9024508f1ff85d5703aebbe726ab09 \
+    --ignore-preflight-errors=FileAvailable--etc-kubernetes-kubelet.conf,Port-10250,FileAvailable--etc-kubernetes-pki-ca.crt
+
+      
+
+   VERIFICATION:-
+   
+         ;  execute on master and check all nodes are visible or not. but you will see this nodes are not ready or running, because we 
+            need one plugin for that. it is weave net.
+           
+         ;  execute on master and check all nodes are visible or not . it not in ready state 
+               
+               kubectl get node                  
+
+      STEP-5:- DEPLOY A "WEAVE NET" NETWORK PLUGIN (WEAVE NET) as yaml file from github .
+      
+            go to k8s page. search for kubeadm add-on "weave net". you will redirected to github. there you will find link. run that cmd
+            on master node.  go to add-on page in k8s docs and find it.
+
+               kubectl apply -f https://reweave.azurewebsites.net/k8s/v1.29/net.yaml
+               
+               kubectl get node                   ; execute on master and check all nodes are visible or not. in running condition.
+               kubectl run deploy dep1  --image nginx --replicas=5
+               kubectl run pod2  --image nginx 
+               kubectl get pod -o wide 
+               kubectl get nodes -o wide 
