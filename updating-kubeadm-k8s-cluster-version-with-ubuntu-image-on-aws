@@ -1,0 +1,276 @@
+ KUBEADM K8S CLUSTER UPGRADING PROCESS, 
+
+
+   QUICK OVERVIEW & IMPORTANT RULES :-
+
+         -  Back up etcd before any control-plane upgrade (single-master = no HA → plan for downtime). 
+         -  Always upgrade the control-plane first, then workers.   
+         -  You must upgrade one minor version at a time (skipping minors is unsupported). Choose a target minor that’s the next 
+            minor (or same minor’s patch). 
+         -  Use the "pkgs.k8s.io" package repo for the Kubernetes minor you are targeting (you may need to change the apt repo to that 
+            minor).
+            
+   STEP-1:-
+      PRE-UPGRADE CHECKLIST (RUN ON YOUR WORKSTATION) : -
+
+         -  Confirm you can SSH to all nodes and kubectl (from your workstation or manager-server, bastion-server ) talks to the cluster:
+            
+               kubectl get pods -A
+               kubectl get nodes -o wide
+
+               ssh -i   ~/.ssh/id_rsa    ec2-user@controlplane-node-ip
+               ssh -i   ~/.ssh/id_rsa    ec2-user@worker-node-1
+               ssh -i   ~/.ssh/id_rsa    ec2-user@worker-node-2
+
+         -  Note down current versions (on control plane):
+
+           
+               kubeadm version 
+               kubelet --version
+               kubectl version --short
+               kubectl get nodes -o wide
+               kubeadm upgrade plan
+               etcdctl version
+
+         -  Pick the exact target Kubernetes version you want (e.g. v1.31.0). You must pick a version that is one minor above your 
+            current version or for patch it should be within the same minor. 
+            
+         -  Use kubeadm upgrade plan (below) to confirm available upgrades. 
+              
+              kubeadm upgrade plan
+      
+   STEP-2:-
+      BACK UP ETCD (ON THE CONTROL-PLANE NODE) — DO THIS FIRST :- 
+
+         -  On single control-plane(master ) kubeadm setups etcd certs are at "/etc/kubernetes/pki/etcd/" . Run on the master:
+            
+               ssh -i   ~/.ssh/id_rsa    ec2-user@controlplane-node-ip
+            
+
+         -  make sure etcdctl is available (you may run it from the etcd pod if preferred).taking backup (snapshot of etcdctl).
+            you will get endpoint and port no in file "cat /etc/kubernetes/manifests/etcd.yaml" . the parameter is named as 
+            "--listen-client-urls" and " --advertise-client-urls" 
+
+               cat /etc/kubernetes/manifests/etcd.yaml
+
+               sudo apt update
+               sudo apt install etcd-client -y
+               etcdctl version
+
+         
+               sudo  ETCDCTL_API=3     etcdctl    --endpoints=https://127.0.0.1:2379 \
+                 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+                 --cert=/etc/kubernetes/pki/etcd/server.crt \
+                 --key=/etc/kubernetes/pki/etcd/server.key \
+                 snapshot save /root/etcd-snapshot-$(date +%F).db
+
+      NOTE: - etcdctl backup will be stored in location "/root/".      
+      
+         -  VERIFY SNAPSHOT:- 
+         
+               sudo  ETCDCTL_API=3     etcdctl  snapshot    status      /root/etcd-snapshot-$(date +%F).db
+
+
+         -  Store the snapshot off the node (S3, another machine) and verify it. Official docs emphasize a snapshot before upgrade. 
+                    
+              
+   STEP-3:-
+
+      POINTING APT repo AT THE TARGET MINOR REPOSITORY (IF NEEDED): -
+
+         -  If you are upgrading to a different minor (e.g. from 1.30 → 1.31), update the "pkgs.k8s.io" apt repo to that minor on 
+            every node (control plane + workers). run as root or with sudo. Example for upgrading to v1.31 from v1.30 .
+
+         - in below cmd change version . 
+         
+               sudo mkdir -p /etc/apt/keyrings
+               
+         -  Download and convert the Kubernetes GPG key. "gpg --dearmor -o" Converts the ASCII-armored key (.key) into a binary GPG 
+            format (.gpg) and saves it to /etc/apt/keyrings/.
+               
+         -  Add the Kubernetes APT repository. tells APT repo to trust this repository only if packages are signed with that specific
+            gpg key. writes the repository configuration into a new file under "/etc/apt/sources.list.d/" .
+         
+               curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key \
+                 | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+                 
+                 
+
+               echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' \
+                 | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+
+               kubeadm upgrade plan
+               sudo apt-get update
+
+
+         -   (If you’re only moving to a patch within the same minor, you may not need to change the repo.) 
+           
+         
+   STEP-4:-       
+   
+      CONTROL-PLANE (MASTER) — UPGRADE KUBEADM, PLAN, AND APPLY
+
+      -  Do this (execute )on the control-plane node (one node at a time). Example uses TARGET=v1.32.0 — replace with your chosen 
+            target.
+
+             ssh -i   ~/.ssh/id_rsa    ec2-user@controlplane-node-ip
+             
+      -   1) Unhold and install kubeadm for the target (check available versions first):-
+         
+            ;  Upgrading control plane nodes.
+
+         -  The upgrade procedure on control plane nodes should be executed one node at a time. Pick a control plane node that you wish 
+            to upgrade first. It must have the "/etc/kubernetes/admin.conf" file
+         -  NOTE: -about following cmd .to Removes the “hold” on the kubeadm package.When a package is on “hold”, it is prevented from 
+            being automatically upgraded or downgraded.Before installing a new version, you must “unhold” it.Puts the kubeadm package 
+            on hold again to prevent future automatic upgrades or downgrades.
+         
+               sudo apt-mark unhold kubeadm && \
+               sudo apt-get update 
+               
+               apt-cache madison kubeadm        # list available package versions - pick the exact one you want
+
+         -  Install the exact kubeadm package (replace <pkg-version> with the apt package string you chose)
+            you wont able to update kubeadm version 1.32.8-1.1 . because its yet to release .
+            
+            
+         
+               ;  sudo apt-get install -y kubeadm=<pkg-version>            ;1.32.8-1.1
+                
+               sudo apt-get install -y kubeadm=' 1.32.8-1.1 ' && \
+               sudo apt-mark hold kubeadm
+        
+      NOTE:-
+            [   Pull new images manually.  Because kubeadm expects v1.32.0 image tags, not v1.32.0-1.1, pull them directly:
+
+                  sudo kubeadm config images pull --kubernetes-version v1.32.0
+                  sudo kubeadm upgrade plan
+                  sudo kubeadm upgrade apply v1.32.0
+
+            ]
+         -  2) Check the upgrade plan (this shows what kubeadm can upgrade to)
+         
+               kubeadm version
+               sudo kubeadm upgrade plan     
+
+         -  3) Apply the kubeadm control-plane upgrade (this updates API server/controller/scheduler static pods)
+            
+            ;  sudo kubeadm upgrade apply v1.32.7-1.1   --force --yes
+               kubectl get node -o wide 
+
+         -  this cmd will show attached nodes its roles and version. see node not upgraded to 1.32 .this is not kubeadm, its a kublet 
+            version kublet is component which manages worker node and communication between worker node and kube apiserver . 
+
+         -  kubeadm upgrade apply will update the control plane static pod manifests and (if configured) also the etcd that kubeadm 
+            manages. Use --yes for non-interactive mode if you’re scripting. 
+           
+   STEP-5:-       
+   
+      ON THE CONTROL-PLANE NODE: NOW UPGRADE KUBELET & KUBECTL AND RESTART KUBELET ON CONTROLPLANE NODE :-
+
+            After kubeadm upgrade apply completes, update the node binaries. replace x in 1.31.x-* with the chosen patch
+            
+               sudo apt-mark unhold kubelet kubectl && \
+               sudo apt-get update && \
+               sudo apt-get install -y kubelet='1.32.0-1.1'  kubectl='1.32.0-1.1' && \
+               sudo apt-mark hold kubelet kubectl
+
+               sudo systemctl daemon-reload
+               sudo systemctl restart kubelet
+
+         ;  verify  the kublet and kubectl get upgraded on node control plane .
+         
+         
+               kubeadm version 
+               kubelet --version
+               kubectl version 
+               kubectl get nodes -o wide
+               etcdctl version
+               
+         ;  verify  the kublet and kubectl get upgraded on node control plane .
+         
+               kubectl get pods -A
+               kubectl get pods -n kube-system
+               kubectl get node   -o wide
+                         
+   
+   STEP-6:- 
+   
+      UPGRADE WORKER NODES KUBEADM, KUBELET, KUBECTL (REPEAT on EACH WORKER NODE , ONE NODE AT A TIME):-
+
+            On each worker (do them sequentially):
+
+      -  ssh to  worker-node1
+      
+            ssh -i ~/.ssh/id_rsa ec2-user@worker-node1  
+
+      -  1) Update kubeadm package on node:-   # pick same minor/patch as control-plane if available
+      
+               sudo apt-mark unhold kubeadm \
+               sudo apt-get update \
+               apt-cache madison kubeadm                            
+               
+               sudo apt-get install -y kubeadm='1.32.7-1.1' && \
+               sudo apt-mark hold kubeadm
+
+      -  2) Update the node configuration (updates kubelet config bits)
+      
+               kubeadm version                            ;  get node cmd won't work here 
+               sudo kubeadm upgrade node
+               
+            ;  sudo kubeadm upgrade apply v1.32.7-1.1   --force --yes
+
+      -  3) Drain the node from a control-plane (or from your workstation with kubectl). run this from a machine that has kubectl 
+            configured
+            
+         NOTE:- DRAIN THE  WORKERE NODE FROM MASTER NODE (EXECUTE ON MASTER )
+         
+            Drain the node.Prepare the node for maintenance by marking it unschedulable and evicting the workloads. move the existing
+            pods.if wont worked then try to run on master .
+
+               kubectl drain <node-to-drain> --ignore-daemonsets           ; provide name of node or ip-address of node 
+               
+               kubectl drain worker-node1 --ignore-daemonsets            
+               kubectl drain worker-node1 --ignore-daemonsets
+
+      -  4) Install kubelet and kubectl to the target version
+            
+               ssh ubuntu@worker1
+               ssh -i ~/.ssh/id_rsa ec2-user@worker-node1  
+               
+               sudo apt-mark unhold kubelet kubectl  && \
+               sudo apt-get update  && \
+               sudo apt-get install -y kubelet='1.32.7-1.1' kubectl='1.32.7-1.1' && \
+               sudo apt-mark hold kubelet kubectl 
+               
+               sudo systemctl daemon-reload
+               sudo systemctl restart kubelet
+
+      -  5) UNCORDON THE NODE:- EXECUTE FROM MASTER NODE 
+            UNCORDON THE NODE:- Bring the node back online by marking it schedulable.
+            
+               kubectl uncordon <node-to-uncordon>
+               kubectl uncordon  worker-node1
+               
+         -   here see kublet and kubectl upgraded for worker-node1 ,now update for other node
+   
+               kubectl get node -o wide    
+               
+         NOTE:-
+              get node cmd won't work here .execute this cmd on master node     
+   
+      EXECUTION:- execute this cmd on master node 
+      
+          -   here see kublet and kubectl upgraded for worker-node1 ,now update for other node
+   
+               kubectl get node -o wide    
+               
+    
+   STEP-7:-
+   
+      POST-UPGRADE CHECKS (ALWAYS RUN) from control plane node :-
+      
+            kubectl get nodes -o wide 
+            kubectl get pods -A
+            kubectl get pods  -n kube-system -o wide
