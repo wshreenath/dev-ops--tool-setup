@@ -121,11 +121,6 @@
             --discovery-token-ca-cert-hash sha256:efe059ee9319056a8b12a30bbec67d97de9024508f1ff85d5703aebbe726ab09 \
             --ignore-preflight-errors=FileAvailable--etc-kubernetes-kubelet.conf,Port-10250,FileAvailable--etc-kubernetes-pki-ca.crt
 
-               kubeadm join 172.31.16.58:6443 --token 8ppvl6.icf7vxd1zxxux99j \
-              --discovery-token-ca-cert-hash sha256:c4845ac048c0785fd3b63681a69f5ea66bafbbb9430c0a1cde212b22537fb469
-
-
-
 
             kubectl get node 
       
@@ -139,7 +134,7 @@
                
                kubectl get node                  
 
-   ***STEP-5:- DEPLOY A "WEAVE NET" NETWORK PLUGIN (WEAVE NET) as yaml file from github .
+   ***STEP-5:- DEPLOY A "WEAVE NET" NETWORK PLUGIN (WEAVE NET) as yaml file from github. execute on master node. 
       
             go to k8s page. search for kubeadm add-on "weave net". you will redirected to github. there you will find link. run 
             that cmd on master node.  go to add-on page in k8s docs and find it.
@@ -147,8 +142,8 @@
                kubectl apply -f https://reweave.azurewebsites.net/k8s/v1.29/net.yaml
                
                kubectl get node                   ; execute on master and check all nodes are visible or not. in running condition.
-               kubectl run deploy dep1  --image nginx --replicas=5
-               kubectl run pod2  --image nginx 
+               kubectl create deploy dep1  --image nginx --replicas=5
+               kubectl create pod2  --image nginx 
                kubectl get pod -o wide 
                kubectl get nodes -o wide 
 
