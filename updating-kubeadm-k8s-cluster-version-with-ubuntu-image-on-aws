@@ -164,26 +164,20 @@
                
          ex2:- if we want to 1.35.13 -->2.1.7 then first upgrade its 2.0.0 or 2.1.0(base version of next minor version)then
             
-            
-         
             ;  sudo apt-get install -y kubeadm=<pkg-version>            ;1.32.7-1.
-                
-               sudo apt-get install -y kubeadm=' 1.32.0 ' && \
+
+               
+               sudo apt-get install -y kubeadm=1.32.0-1.1 && \
                sudo apt-mark hold kubeadm
                
-         [   
-            ;  execute below 2 cmd , verify its working or not ?
-            ;  sudo apt-mark unhold kubeadm && sudo apt-get update 
-            ;  sudo apt-get install -y kubeadm=' 1.32.7-1.1' && \
-            ;  sudo apt-mark hold kubeadm
-         ]
-         
+               
       NOTE:-   
-            [  if we won't able to download or upgrade kubeadm version 1.32.7-1.1 directly the manually download those packages. 
+            [  if we won't able to download or upgrade kubeadm version 1.32.0 directly the manually download those packages. 
                Pull new images manually.  Because kubeadm expects v1.32.0 image tags, not v1.32.0-1.1, pull them directly:
 
                   sudo kubeadm config images pull --kubernetes-version v1.32.0
                   sudo kubeadm upgrade plan                             ; it will show available updates for this series 1.32  
+                  apt-cache madison kubeadm   
                   sudo kubeadm upgrade apply v1.32.0
 
             ]
@@ -191,21 +185,21 @@
          -  2) Check the upgrade plan (this shows what kubeadm can upgrade to)
          
                kubeadm version
-               sudo kubeadm upgrade plan     
+               sudo kubeadm upgrade apply v1.32.0
+               kubeadm version
 
          -  3) Apply the kubeadm ControlPlane upgrade (this updates API server/controller/scheduler static pods)
             
-            ;  sudo kubeadm upgrade apply v1.32.7-1.1   --force --yes
+            ;  sudo kubeadm upgrade apply v1.32.0   --force --yes
             
                kubectl get node -o wide 
                
       VERIFICATION:-
       
                kubectl get node -o wide 
-         -  this cmd will show attached nodes its roles and version. see node not upgraded to 1.32 . this is not kubeadm, its a kublet 
-            version, kublet is component which manages worker node and communication between worker node and kube apiserver . 
 
-         -  kubeadm upgrade apply will update the control plane static pod manifests and (if configured) also the etcd that kubeadm 
+        
+         -  kubeadm upgrade apply will update the control plane static pod manifests files and (if configured) also the etcd that kubeadm 
             manages. Use --yes for non-interactive mode if you’re scripting. 
            
    STEP-5:-       
@@ -228,10 +222,13 @@
                kubeadm version 
                kubelet --version
                kubectl version 
-                etcdctl version                          ; we have not updated etcd so not mandatory its separate component
+                etcdctl version                          ; we have not updated etcd as its  not mandatory its separate component
                
                kubectl get nodes -o wide
-              
+
+         -  this cmd will show attached nodes its roles and version. see node not upgraded to 1.32 . this is not kubeadm, its a kublet 
+            version, kublet is component which manages worker node and communication between worker node and kube apiserver . 
+      
                
          ;  verify  the kublet and kubectl get upgraded on node control plane .
          
@@ -250,11 +247,11 @@
 
       -  1) UPDATE KUBEADM PACKAGE ON NODE:-   # pick same minor/patch as ControlPlane if available
       
-               sudo apt-mark unhold kubeadm \
-               sudo apt-get update \
+               sudo apt-mark unhold kubeadm &&\
+               sudo apt-get update &&\
                apt-cache madison kubeadm                            
                
-               sudo apt-get install -y kubeadm='1.32.7-1.1' && \
+               sudo apt-get install -y kubeadm='1.32.0-1.1' && \
                sudo apt-mark hold kubeadm
 
       -  2) UPDATE THE NODE CONFIGURATION (updates kubelet config bits)
@@ -262,7 +259,7 @@
                kubeadm version                            ;  get node cmd won't work here .so we used kubeadm cmd 
                sudo kubeadm upgrade node
                
-            ;  sudo kubeadm upgrade apply v1.32.7-1.1   --force --yes
+            ;  sudo kubeadm upgrade apply v1.32.0-1.1   --force --yes
 
       -  3) DRAIN THE WORKER NODE FROM A CONTROLPLANE (or from your workstation with kubectl). run this from a machine that has kubectl 
             configured
@@ -284,10 +281,10 @@
                
                sudo apt-mark unhold kubelet kubectl  && \
                sudo apt-get update  && \
-               sudo apt-get install -y kubelet='1.32.7-1.1' kubectl='1.32.7-1.1' && \
+               sudo apt-get install -y kubelet='1.32.0-1.1' kubectl='1.32.0-1.1' && \
                sudo apt-mark hold kubelet kubectl 
                
-               sudo systemctl daemon-reload
+               sudo systemctl daemon-reload &&\
                sudo systemctl restart kubelet
 
       -  5) UNCORDON THE NODE:- EXECUTE FROM MASTER NODE 
@@ -301,6 +298,7 @@
    
                kubectl get node -o wide               ; execute on master node 
                
+               
          NOTE:-
               "kubectl get node" cmd won't work here .execute this cmd on master node     
    
@@ -308,7 +306,9 @@
       
           -   here verify kublet and kubectl upgraded for worker-node1 ,now update for other node
           
-               kubectl get node -o wide    
+               kubectl get node -o wide 
+               kubectl get    pods -A     -o  wide
+
                
     
    STEP-7:-
