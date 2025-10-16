@@ -42,6 +42,7 @@
             
          -  while upgrading next patch, you can directly upgrades to any patch. but while upgrading next minor version(or major ). first
             upgrades the its base version of that minor (major version ).or manually download that. 
+
          ex1:- if we want to 1.31.12 -->1.32.7 then first upgrade its 1.32.0(base version of next minor version)then upgrades 
                to 1.32.7 .
          ex2:- if we want to 1.35.12 -->2.1.7 then first upgrade its 2.0.0 or 2.1.0(base version of next minor version)then
@@ -56,19 +57,19 @@
    
       BACK UP ETCD (ON THE ControlPlane NODE) — DO THIS FIRST :- 
 
-         -  On single ControlPlane node(master). kubeadm setups etcd certs are at "/etc/kubernetes/pki/etcd/" . Run on the master:
+         -  On single ControlPlane node(master). kubeadm setups etcd certs are located  at "/etc/kubernetes/pki/etcd/" . Run on the master:
             
                ssh -i   ~/.ssh/id_rsa    ec2-user@ControlPlane-node-ip
-            
+               ls /etc/kubernetes/pki/etcd/
 
          -  make sure etcdctl is available (you may run it from the etcd pod if preferred).while taking backup (snapshot of etcdctl)
             you will need some information. you will get endpoint and port-no in file "cat /etc/kubernetes/manifests/etcd.yaml" . 
             the parameter is named as  "--listen-client-urls" and " --advertise-client-urls" 
            
-
+               ls /etc/kubernetes/manifests/
                cat /etc/kubernetes/manifests/etcd.yaml
             
-            ; note down the value of parameter "--listen-client-urls" and " --advertise-client-urls" 
+            ; note down the value of parameters "--listen-client-urls" and " --advertise-client-urls" 
             
                sudo apt update \
                sudo apt install etcd-client -y \
@@ -80,6 +81,8 @@
                  --cert=/etc/kubernetes/pki/etcd/server.crt \
                  --key=/etc/kubernetes/pki/etcd/server.key \
                  snapshot save /root/etcd-snapshot-$(date +%F).db
+
+            ls /root/
 
       NOTE: - etcdctl backup will be stored in location "/root/" directory of your kubeadm-manager server volume or ControlPlane server.      
       
@@ -126,7 +129,7 @@
          
    STEP-4:-       
    
-      UPGRADE KUBEADM, PLAN, AND APPLY ON ControlPlane (MASTER) — 
+     UPGRADE  PLAN, AND APPLY KUBEADM, ON ControlPlane (MASTER) : — 
 
       -  Do this (execute )on the ControlPlane node (one node at a time). Example uses TARGET=v1.32.0 — replace with your chosen 
             target.
@@ -137,7 +140,7 @@
          
             ;  Upgrading control plane nodes.
 
-         -  The upgrade procedure on ControlPlane nodes(if multiple master ) should be executed one node at a time. Pick a ControlPlane 
+         -  The upgrade procedure on ControlPlane nodes should be executed one node at a time (if there are multiple master ). Pick a ControlPlane 
             node that you wish to upgrade first. It must have the "/etc/kubernetes/admin.conf" file
             
             
