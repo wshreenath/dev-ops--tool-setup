@@ -66,15 +66,14 @@
                      IoUid = 0
                      NoNewKeyring = false
                      SystemdCgroup = false
-
-
-                     
             ]
                   
                   
          #  change status of systemdCgroup parameter in "config.toml" file to true    
          
-               sed -i '139s/false/true/' /etc/containerd/config.toml     
+               sed -i '139s/false/true/' /etc/containerd/config.toml   
+               cat -n   /etc/containerd/config.toml|grep   -i   139
+
                  
                systemctl restart containerd.service
                systemctl status  containerd.service	
